@@ -6,8 +6,8 @@ Copy Markdown from Neovim to the macOS clipboard as rich text, so that pasting i
 
 ## How it works
 
-1. [pandoc](https://pandoc.org/) converts the Markdown (GitHub Flavored Markdown) to HTML.
-2. The HTML is adjusted for the paste targets (see below).
+1. The tree-sitter parsers `markdown` and `markdown_inline`, bundled with Neovim, parse the Markdown (GitHub Flavored Markdown: tables, task lists, strikethrough and bare URLs included).
+2. The plugin writes HTML from the syntax tree, adjusted for the paste targets (see below). No external converter is needed.
 3. The HTML and the original Markdown (as plain text) are put on the clipboard together.
 
 The adjustments come from pasting the same document into each target and fixing what broke:
@@ -22,11 +22,13 @@ The adjustments come from pasting the same document into each target and fixing 
 
 Slack has no headings or tables, so headings paste as plain lines and tables as preformatted text.
 
+The tree-sitter grammar does not follow CommonMark to the letter, so unusual constructs may render differently from GitHub. Everyday documents convert as expected.
+
 ## Requirements
 
 - macOS (the clipboard is written through `osascript`)
 - Neovim >= 0.10
-- [pandoc](https://pandoc.org/installing.html) on `$PATH`
+- The tree-sitter parsers `markdown` and `markdown_inline`. Neovim >= 0.10 bundles them; if [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) has installed its own, those are used instead.
 
 ## Installation
 
@@ -58,6 +60,17 @@ local rich = require "md-rich-copy"
 rich.to_html(markdown) -- Markdown string -> adjusted HTML string
 rich.copy(lines)       -- copy a list of lines to the clipboard
 ```
+
+## Development
+
+```sh
+make test   # run the tests (tests/*_test.lua) with the parsers bundled with Neovim
+make lint   # check formatting with StyLua
+```
+
+`tests/clipboard_test.lua` overwrites the clipboard, so it runs only when `MD_RICH_COPY_TEST_CLIPBOARD=1` is set. CI sets it on a macOS runner.
+
+Releases are cut by [release-please](https://github.com/googleapis/release-please): merging Conventional Commits into `main` keeps a release PR up to date, and merging that PR tags the version and publishes the GitHub release.
 
 ## License
 

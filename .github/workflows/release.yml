@@ -1,0 +1,18 @@
+name: Release
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      # Keeps a release PR open that bumps the version and CHANGELOG.md from the
+      # Conventional Commits merged into main. Merging it tags vX.Y.Z and publishes
+      # the GitHub release.
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
