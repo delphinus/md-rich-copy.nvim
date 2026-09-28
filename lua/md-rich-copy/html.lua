@@ -83,9 +83,25 @@ local function text_html(s)
   return table.concat(out)
 end
 
+--- Keep the spaces of a code line that HTML would collapse: indentation, runs of
+--- two or more, and a trailing one.
+local function keep_spaces(line)
+  local indent, rest = line:match "^([ \t]*)(.*)$"
+  indent = indent:gsub("\t", "    "):gsub(" ", "&nbsp;")
+  rest = rest
+    :gsub("  +", function(run)
+      return ("&nbsp;"):rep(#run)
+    end)
+    :gsub(" $", "&nbsp;")
+  return indent .. rest
+end
+
 local function code_block(body)
-  -- Jira joins the lines of a <pre> into one, so break them with <br>.
-  return "<pre><code>" .. escape(body):gsub("\n", "<br>") .. "</code></pre>"
+  -- Jira joins the lines of a <pre> into one, so break them with <br>. It also
+  -- turns each line into {{monospace}}, which collapses the spaces (and fails to
+  -- apply when the line starts with one), so keep them as &nbsp;.
+  local lines = vim.split(escape(body), "\n", { plain = true })
+  return "<pre><code>" .. table.concat(vim.tbl_map(keep_spaces, lines), "<br>") .. "</code></pre>"
 end
 
 local function unescape_punct(s)
@@ -389,8 +405,10 @@ function Converter:list(node)
   local out = { open }
   for _, item in ipairs(items) do
     -- <input> checkboxes vanish in Confluence, Jira and Slack; use characters.
-    local prefix = child_of_type(item, "task_list_marker_checked") and "☑ "
-      or child_of_type(item, "task_list_marker_unchecked") and "☐ "
+    -- Emoji, because text symbols like ☐ / ☑ are drawn by whichever font covers
+    -- them, so their sizes differ from item to item in Mail.app and Confluence.
+    local prefix = child_of_type(item, "task_list_marker_checked") and "✅ "
+      or child_of_type(item, "task_list_marker_unchecked") and "⬜ "
       or nil
     table.insert(out, "<li>" .. self:blocks(item, { tight = tight, prefix = prefix }) .. "</li>")
   end

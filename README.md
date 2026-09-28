@@ -14,9 +14,9 @@ The adjustments come from pasting the same document into each target and fixing 
 
 | Element | Adjustment | Why |
 |---|---|---|
-| Task lists | `<input>` checkboxes become `☐` / `☑` | Checkboxes vanish in Confluence, Jira and Slack |
+| Task lists | `<input>` checkboxes become the emoji `✅` / `⬜` | Checkboxes vanish in Confluence, Jira and Slack. Text symbols such as `☐` / `☑` come out in different sizes, depending on which font draws them |
 | Strikethrough | Wrapped in both `<del>` and `<s>` | Jira reads only `<del>`, Slack reads only `<s>` |
-| Code blocks | Newlines become `<br>` | Jira joins the lines of a `<pre>` into one |
+| Code blocks | Newlines become `<br>`, and indentation and runs of spaces become `&nbsp;` | Jira joins the lines of a `<pre>` into one, and collapses the spaces |
 | Tables, block quotes | Only borders and a left bar are styled | Mail.app shows neither otherwise; font sizes and colors are left to the target |
 | Plain text | The Markdown source is added | Slack refuses to paste when there is no plain-text flavor |
 

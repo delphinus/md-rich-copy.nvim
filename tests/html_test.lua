@@ -136,14 +136,14 @@ check("a loose nested list keeps the outer list tight", { "- a", "  - b", "", " 
 -- <input> checkboxes vanish in Confluence, Jira and Slack.
 check("task list items become characters", { "- [ ] todo", "- [x] done" }, {
   "<ul>",
-  "<li>☐ todo</li>",
-  "<li>☑ done</li>",
+  "<li>⬜ todo</li>",
+  "<li>✅ done</li>",
   "</ul>",
 })
 check(
   "loose task list",
   { "- [ ] a", "", "- [X] b" },
-  { "<ul>", "<li><p>☐ a</p></li>", "<li><p>☑ b</p></li>", "</ul>" }
+  { "<ul>", "<li><p>⬜ a</p></li>", "<li><p>✅ b</p></li>", "</ul>" }
 )
 
 -- Block quotes
@@ -156,7 +156,8 @@ check(
   { QUOTE, "<p>a</p>", "<ul>", "<li>b</li>", "</ul>", "</blockquote>" }
 )
 
--- Code blocks: Jira joins the lines of a <pre> into one, so they are broken with <br>.
+-- Code blocks: Jira joins the lines of a <pre> into one, so they are broken with <br>,
+-- and collapses spaces, so indentation and runs of spaces become &nbsp;.
 
 check(
   "fenced code block",
@@ -168,30 +169,40 @@ check("empty fenced code block", { "```", "```" }, { "<pre><code></code></pre>" 
 check(
   "indented fence strips its indentation",
   { "  ```", "  a", "    b", "  ```" },
-  { "<pre><code>a<br>  b</code></pre>" }
+  { "<pre><code>a<br>&nbsp;&nbsp;b</code></pre>" }
 )
 check("fenced code in a list item", { "- a", "", "  ```", "  b", "    c", "  ```" }, {
   "<ul>",
   "<li><p>a</p>",
-  "<pre><code>b<br>  c</code></pre></li>",
+  "<pre><code>b<br>&nbsp;&nbsp;c</code></pre></li>",
   "</ul>",
 })
 check("fenced code in a block quote", { "> ```", "> a", ">   b", "> ```" }, {
   QUOTE,
-  "<pre><code>a<br>  b</code></pre>",
+  "<pre><code>a<br>&nbsp;&nbsp;b</code></pre>",
   "</blockquote>",
 })
-check("indented code block", { "    a", "      b", "", "    c" }, { "<pre><code>a<br>  b<br><br>c</code></pre>" })
+check(
+  "indented code block",
+  { "    a", "      b", "", "    c" },
+  { "<pre><code>a<br>&nbsp;&nbsp;b<br><br>c</code></pre>" }
+)
 check("indented code in a list item", { "- a", "", "      b", "        c", "", "      d" }, {
   "<ul>",
   "<li><p>a</p>",
-  "<pre><code>b<br>  c<br><br>d</code></pre></li>",
+  "<pre><code>b<br>&nbsp;&nbsp;c<br><br>d</code></pre></li>",
   "</ul>",
 })
 check(
   "indented code in a block quote",
   { ">     a", ">       b" },
-  { QUOTE, "<pre><code>a<br>  b</code></pre>", "</blockquote>" }
+  { QUOTE, "<pre><code>a<br>&nbsp;&nbsp;b</code></pre>", "</blockquote>" }
+)
+
+check(
+  "spaces that HTML would collapse are kept",
+  { "```", "a  b c ", "\tt", "```" },
+  { "<pre><code>a&nbsp;&nbsp;b c&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;t</code></pre>" }
 )
 
 -- Tables: Mail.app draws no borders without styles.
