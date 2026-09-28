@@ -6,8 +6,8 @@ Neovim で書いた Markdown を、macOS のクリップボードにリッチテ
 
 ## 仕組み
 
-1. [pandoc](https://pandoc.org/) で Markdown (GitHub Flavored Markdown) を HTML に変換します。
-2. 貼り付け先に合わせて HTML を手直しします (下表)。
+1. Neovim に同梱されている tree-sitter のパーサー `markdown` と `markdown_inline` で Markdown (GitHub Flavored Markdown。表・タスクリスト・取り消し線・URL の自動リンクを含む) を解析します。
+2. 構文木から、貼り付け先に合わせて手直しした HTML を書き出します (下表)。外部の変換ツールは要りません。
 3. HTML と、元の Markdown (プレーンテキスト) を一緒にクリップボードへ入れます。
 
 手直しの内容は、同じ文書を各貼り付け先に貼って、崩れたところを直した結果です。
@@ -22,11 +22,13 @@ Neovim で書いた Markdown を、macOS のクリップボードにリッチテ
 
 Slack には見出しと表の書式が無いので、見出しは普通の行、表は整形済みテキストとして貼られます。
 
+tree-sitter の文法は CommonMark に厳密には従っていないため、珍しい書き方では GitHub と表示が異なることがあります。普段の文書は問題なく変換できます。
+
 ## 必要なもの
 
 - macOS (`osascript` でクリップボードに書き込みます)
 - Neovim 0.10 以降
-- `$PATH` 上の [pandoc](https://pandoc.org/installing.html)
+- tree-sitter のパーサー `markdown` と `markdown_inline`。Neovim 0.10 以降に同梱されています。[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) で入れたものがあれば、そちらが使われます。
 
 ## インストール
 
@@ -58,6 +60,17 @@ local rich = require "md-rich-copy"
 rich.to_html(markdown) -- Markdown の文字列 -> 手直し済みの HTML の文字列
 rich.copy(lines)       -- 行のリストをクリップボードへコピーする
 ```
+
+## 開発
+
+```sh
+make test   # テスト (tests/*_test.lua) を Neovim 同梱のパーサーで実行する
+make lint   # StyLua で書式を確認する
+```
+
+`tests/clipboard_test.lua` はクリップボードを上書きするので、`MD_RICH_COPY_TEST_CLIPBOARD=1` を設定したときだけ実行されます。CI では macOS のランナーで設定しています。
+
+リリースは [release-please](https://github.com/googleapis/release-please) で行います。Conventional Commits を `main` にマージするとリリース PR が更新され、その PR をマージするとタグが付いて GitHub のリリースが公開されます。
 
 ## ライセンス
 

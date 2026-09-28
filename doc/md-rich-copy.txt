@@ -14,9 +14,11 @@ Lua API							      |md-rich-copy-api|
 ==============================================================================
 INTRODUCTION					     *md-rich-copy-introduction*
 
-md-rich-copy.nvim converts Markdown to HTML with pandoc and puts it on the
-macOS clipboard together with the Markdown source as plain text. Pasting it
-into Mail.app, Confluence, Jira or Slack gives formatted text.
+md-rich-copy.nvim converts Markdown to HTML and puts it on the macOS clipboard
+together with the Markdown source as plain text. Pasting it into Mail.app,
+Confluence, Jira or Slack gives formatted text. No external converter is
+needed: the Markdown is parsed with the tree-sitter parsers "markdown" and
+"markdown_inline" bundled with Neovim.
 
 The HTML is adjusted so that it survives those targets: task list checkboxes
 become characters, strikethrough is wrapped in both <del> and <s>, newlines in
@@ -28,7 +30,7 @@ REQUIREMENTS					     *md-rich-copy-requirements*
 
 - macOS
 - Neovim 0.10 or later
-- pandoc in $PATH
+- tree-sitter parsers "markdown" and "markdown_inline" (bundled with Neovim)
 
 ==============================================================================
 COMMANDS						 *md-rich-copy-commands*

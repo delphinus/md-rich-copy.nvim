@@ -1,8 +1,6 @@
--- Convert Markdown to HTML with pandoc and put it on the macOS clipboard as rich text.
+-- Convert Markdown to HTML and put it on the macOS clipboard as rich text.
 --
--- The HTML is tuned so that it pastes cleanly into Mail.app, Confluence, Jira and
--- Slack. Each tweak in M.adjust() exists because one of them mishandled pandoc's
--- plain output; see the comments there.
+-- The conversion lives in md-rich-copy/html.lua; this module handles the clipboard.
 local M = {}
 
 local META = [[<meta http-equiv="Content-Type" content="text/html; charset=utf-8">]]
@@ -21,46 +19,11 @@ on run argv
 end run
 ]]
 
---- Rewrite pandoc's HTML so that it survives pasting into the targets above.
----@param html string HTML produced by `pandoc -f gfm -t html`
----@return string
-function M.adjust(html)
-  -- Task lists: <input> checkboxes vanish in Confluence, Jira and Slack.
-  html = html
-    :gsub('<label><input type="checkbox" checked="" />', "☑ ")
-    :gsub('<label><input type="checkbox" />', "☐ ")
-    :gsub("</label>", "")
-    :gsub('<ul class="task%-list">', "<ul>")
-  -- Strikethrough: Jira reads only <del>, Slack reads only <s>.
-  html = html:gsub("<del>", "<del><s>"):gsub("</del>", "</s></del>")
-  -- Mail.app draws no table borders or quote bar without styles. Add only those,
-  -- and leave font sizes and colors to the target so its defaults win.
-  local cell = "border:1px solid #999; padding:4px 8px;"
-  html = html
-    :gsub("<table>", '<table style="border-collapse:collapse;">')
-    :gsub('<(t[hd]) style="([^"]*)">', function(tag, style)
-      return ('<%s style="%s %s">'):format(tag, cell, style)
-    end)
-    :gsub("<(t[hd])>", function(tag)
-      return ('<%s style="%s">'):format(tag, cell)
-    end)
-    :gsub("<blockquote>", '<blockquote style="border-left:3px solid #ccc; margin-left:0; padding-left:12px;">')
-  -- Code blocks: Jira collapses newlines inside <pre>, so use <br> instead.
-  html = html:gsub("<pre[^>]*><code[^>]*>\n?(.-)</code></pre>", function(body)
-    return "<pre><code>" .. body:gsub("\n", "<br>") .. "</code></pre>"
-  end)
-  return html
-end
-
---- Convert Markdown to the adjusted HTML.
+--- Convert Markdown to HTML adjusted for pasting.
 ---@param markdown string
 ---@return string
 function M.to_html(markdown)
-  -- pandoc >= 3.8 warns that --no-highlight is deprecated, but the replacement
-  -- (--syntax-highlighting=none) does not exist in older versions.
-  local result = vim.system({ "pandoc", "-f", "gfm", "-t", "html", "--no-highlight" }, { stdin = markdown }):wait()
-  if result.code ~= 0 then error("pandoc failed: " .. result.stderr, 0) end
-  return M.adjust(result.stdout)
+  return require("md-rich-copy.html").convert(markdown)
 end
 
 --- Copy Markdown lines to the clipboard as rich text, with the source as plain text.
@@ -89,9 +52,15 @@ function M.copy_range(line1, line2)
   if vim.fn.has "mac" == 0 then
     vim.notify("md-rich-copy: only macOS is supported", vim.log.levels.ERROR)
     return
-  elseif vim.fn.executable "pandoc" == 0 then
-    vim.notify("md-rich-copy: pandoc not found", vim.log.levels.ERROR)
-    return
+  end
+  for _, lang in ipairs { "markdown", "markdown_inline" } do
+    -- language.add() throws on failure in 0.10 and returns nil, err from 0.11.
+    local ok, res, err = pcall(vim.treesitter.language.add, lang)
+    if not ok or err then
+      local msg = ("md-rich-copy: tree-sitter parser %q is not available: %s"):format(lang, ok and err or res)
+      vim.notify(msg, vim.log.levels.ERROR)
+      return
+    end
   end
   local lines = vim.api.nvim_buf_get_lines(0, line1 - 1, line2, false)
   local ok, err = pcall(M.copy, lines)

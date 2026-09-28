@@ -14,9 +14,11 @@ Lua API							      |md-rich-copy-api|
 ==============================================================================
 はじめに					     *md-rich-copy-introduction*
 
-md-rich-copy.nvim は、pandoc で Markdown を HTML に変換し、Markdown の原文 (プ
-レーンテキスト) と一緒に macOS のクリップボードへ入れる。メール.app・
-Confluence・Jira・Slack に貼り付けると、書式付きの文章になる。
+md-rich-copy.nvim は、Markdown を HTML に変換し、Markdown の原文 (プレーンテキ
+スト) と一緒に macOS のクリップボードへ入れる。メール.app・Confluence・Jira・
+Slack に貼り付けると、書式付きの文章になる。変換に外部のツールは要らない。
+Markdown は Neovim に同梱されている tree-sitter のパーサー "markdown" と
+"markdown_inline" で解析する。
 
 HTML は貼り付け先で崩れないよう手直しする。タスクリストのチェックボックスは文
 字に、取り消し線は <del> と <s> の両方で囲み、コードブロックの改行は <br> に、
@@ -27,7 +29,7 @@ HTML は貼り付け先で崩れないよう手直しする。タスクリスト
 
 - macOS
 - Neovim 0.10 以降
-- $PATH 上の pandoc
+- tree-sitter のパーサー "markdown" と "markdown_inline" (Neovim に同梱)
 
 ==============================================================================
 コマンド						 *md-rich-copy-commands*
