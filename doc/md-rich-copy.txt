@@ -1,0 +1,51 @@
+*md-rich-copy.txt*	Copy Markdown to the clipboard as rich text
+
+Author: delphinus
+License: MIT
+
+==============================================================================
+CONTENTS					       *md-rich-copy-contents*
+
+Introduction				       |md-rich-copy-introduction|
+Requirements				       |md-rich-copy-requirements|
+Commands					       |md-rich-copy-commands|
+Lua API						    |md-rich-copy-api|
+
+==============================================================================
+INTRODUCTION				       *md-rich-copy-introduction*
+
+md-rich-copy.nvim converts Markdown to HTML with pandoc and puts it on the
+macOS clipboard together with the Markdown source as plain text. Pasting it
+into Mail.app, Confluence, Jira or Slack gives formatted text.
+
+The HTML is adjusted so that it survives those targets: task list checkboxes
+become characters, strikethrough is wrapped in both <del> and <s>, newlines in
+code blocks become <br>, and tables and block quotes get borders. See the
+README for the reason behind each adjustment.
+
+==============================================================================
+REQUIREMENTS				       *md-rich-copy-requirements*
+
+- macOS
+- Neovim 0.10 or later
+- pandoc in $PATH
+
+==============================================================================
+COMMANDS					       *md-rich-copy-commands*
+
+							 *:MdRichCopy*
+:[range]MdRichCopy
+		Copy the lines in [range] as rich text. The default is the
+		whole buffer.
+
+==============================================================================
+LUA API							    *md-rich-copy-api*
+
+require("md-rich-copy").to_html({markdown})	    *md-rich-copy.to_html()*
+		Convert the string {markdown} to the adjusted HTML and return
+		it.
+
+require("md-rich-copy").copy({lines})		       *md-rich-copy.copy()*
+		Copy the list of strings {lines} to the clipboard.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:

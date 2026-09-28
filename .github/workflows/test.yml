@@ -1,0 +1,30 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    name: nvim ${{ matrix.nvim }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # v0.10.0 is the minimum this plugin claims to support (vim.system).
+        nvim: [v0.10.0, stable, nightly]
+    # The clipboard part is macOS-only and not exercised here; the tests cover the
+    # HTML conversion, which is platform-independent.
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.nvim == 'nightly' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pandoc
+        # Ubuntu's pandoc is older than 3.8, which checks that --no-highlight still works there.
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.nvim }}
+      - name: Report versions
+        run: |
+          nvim --version | head -1
+          pandoc --version | head -1
+      - name: Run tests
+        run: make test

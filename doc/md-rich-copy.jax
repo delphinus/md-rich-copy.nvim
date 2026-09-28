@@ -1,0 +1,49 @@
+*md-rich-copy.jax*	Markdown をリッチテキストでコピーする
+
+Author: delphinus
+License: MIT
+
+==============================================================================
+目次						       *md-rich-copy-contents*
+
+はじめに				       |md-rich-copy-introduction|
+必要要件				       |md-rich-copy-requirements|
+コマンド					       |md-rich-copy-commands|
+Lua API						    |md-rich-copy-api|
+
+==============================================================================
+はじめに				       *md-rich-copy-introduction*
+
+md-rich-copy.nvim は、pandoc で Markdown を HTML に変換し、Markdown の原文
+(プレーンテキスト) と一緒に macOS のクリップボードへ入れる。メール.app・
+Confluence・Jira・Slack に貼り付けると、書式付きの文章になる。
+
+HTML は貼り付け先で崩れないよう手直しする。タスクリストのチェックボックスは
+文字に、取り消し線は <del> と <s> の両方で囲み、コードブロックの改行は <br>
+に、表と引用には罫線を付ける。それぞれの理由は README を参照。
+
+==============================================================================
+必要要件				       *md-rich-copy-requirements*
+
+- macOS
+- Neovim 0.10 以降
+- $PATH 上の pandoc
+
+==============================================================================
+コマンド					       *md-rich-copy-commands*
+
+							 *:MdRichCopy*
+:[range]MdRichCopy
+		[range] の行をリッチテキストとしてコピーする。既定はバッファ
+		全体。
+
+==============================================================================
+LUA API							    *md-rich-copy-api*
+
+require("md-rich-copy").to_html({markdown})	    *md-rich-copy.to_html()*
+		文字列 {markdown} を手直し済みの HTML に変換して返す。
+
+require("md-rich-copy").copy({lines})		       *md-rich-copy.copy()*
+		文字列のリスト {lines} をクリップボードへコピーする。
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
