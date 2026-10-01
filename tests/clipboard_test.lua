@@ -31,7 +31,7 @@ H.test("copy puts HTML and the Markdown source on the clipboard", function()
   local html = clipboard "public.html"
   H.eq(html:find('<meta http-equiv="Content-Type" content="text/html; charset=utf-8">', 1, true) == 1, true, "meta")
   H.eq(html:find("<h1>Title</h1>", 1, true) ~= nil, true, "heading")
-  H.eq(html:find("<li>☑ done 日本語</li>", 1, true) ~= nil, true, "task item")
+  H.eq(html:find("<li>✅ done 日本語</li>", 1, true) ~= nil, true, "task item")
   H.eq(clipboard "public.utf8-plain-text", table.concat(lines, "\n"), "plain text")
 end)
 
