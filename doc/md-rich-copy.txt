@@ -9,6 +9,7 @@ CONTENTS						 *md-rich-copy-contents*
 Introduction					     |md-rich-copy-introduction|
 Requirements					     |md-rich-copy-requirements|
 Commands						 |md-rich-copy-commands|
+Images							   |md-rich-copy-images|
 Lua API							      |md-rich-copy-api|
 
 ==============================================================================
@@ -41,13 +42,43 @@ COMMANDS						 *md-rich-copy-commands*
 		whole buffer.
 
 ==============================================================================
+IMAGES							   *md-rich-copy-images*
+
+Local images are embedded in the copy: as data: URLs in the HTML, and in a web
+archive put on the clipboard alongside it. WebKit apps such as Mail.app prefer
+the web archive and attach its images to the message. Wide images shrink to
+the width of the window.
+
+Image paths are looked up from the directory of the buffer's file. Obsidian
+embeds are supported too:
+>markdown
+	![[image.png]]
+	![[image.png|300]]
+	![[image.png|alt text]]
+<
+
+An embedded image that is not next to the note is searched for by name in the
+vault, the nearest directory above that contains ".obsidian", as Obsidian
+does. Remote images and images that cannot be found are left as they are, and
+embeds of anything other than images are kept as text.
+
+==============================================================================
 LUA API							      *md-rich-copy-api*
 
-require("md-rich-copy").to_html({markdown})		*md-rich-copy.to_html()*
+require("md-rich-copy").to_html({markdown} [, {opts}])
+							*md-rich-copy.to_html()*
 		Convert the string {markdown} to the adjusted HTML and return
-		it.
+		it. {opts} is an optional table:
+		  image	Function called as image({src}, {embed}) for each
+			image, returning the value of its src attribute.
+			{embed} is true for "![[src]]".
 
-require("md-rich-copy").copy({lines})			   *md-rich-copy.copy()*
-		Copy the list of strings {lines} to the clipboard.
+require("md-rich-copy").copy({lines} [, {opts}])
+							   *md-rich-copy.copy()*
+		Copy the list of strings {lines} to the clipboard. {opts} is
+		an optional table:
+		  base	Directory that relative image paths are looked up
+			from. The default is the current directory.
+			|:MdRichCopy| passes the directory of the buffer's file.
 
 vim:tw=78:ts=8:noet:ft=help:norl:

@@ -90,7 +90,31 @@ inline(
   "https://e.example/aを参照",
   '<a href="https://e.example/a">https://e.example/a</a>を参照'
 )
-inline("image", "![a *b* & c](i.png)", '<img src="i.png" alt="a b &amp; c" />')
+-- Screenshots are often wider than the message window, so images may shrink.
+local FIT = ' style="max-width:100%;" />'
+inline("image", "![a *b* & c](i.png)", '<img src="i.png" alt="a b &amp; c"' .. FIT)
+inline("image with title", '![a](i.png "T")', '<img src="i.png" alt="a" title="T"' .. FIT)
+inline("Obsidian embed", "a ![[x y.png]] b", 'a <img src="x y.png" alt="x y.png"' .. FIT .. " b")
+inline("Obsidian embed with width", "![[d/x.PNG|300]]", '<img src="d/x.PNG" alt="x.PNG" width="300"' .. FIT)
+inline("Obsidian embed with size", "![[x.png|30x20]]", '<img src="x.png" alt="x.png" width="30" height="20"' .. FIT)
+inline("Obsidian embed with alt text", "![[x.png|a & b]]", '<img src="x.png" alt="a &amp; b"' .. FIT)
+inline("Obsidian embed of a note stays text", "![[note#h|a<b]]", "![[note#h|a&lt;b]]")
+inline("Obsidian embed in a code span stays code", "`![[x.png]]`", "<code>![[x.png]]</code>")
+H.test("image sources go through the image option", function()
+  local seen = {}
+  local html = convert("![a](i.png) ![[e.png]]", {
+    image = function(src, embed)
+      table.insert(seen, ("%s:%s"):format(src, embed))
+      return "file:///" .. src
+    end,
+  })
+  H.eq(table.concat(seen, " "), "i.png:false e.png:true", "arguments")
+  H.eq(
+    html:find('src="file:///i.png"', 1, true) ~= nil and html:find('src="file:///e.png"', 1, true) ~= nil,
+    true,
+    "src"
+  )
+end)
 check("reference links", {
   "[full][R] [collapsed][] [shortcut]",
   "",

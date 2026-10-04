@@ -18,9 +18,22 @@ The adjustments come from pasting the same document into each target and fixing 
 | Strikethrough | Wrapped in both `<del>` and `<s>` | Jira reads only `<del>`, Slack reads only `<s>` |
 | Code blocks | Newlines become `<br>`, and indentation and runs of spaces become `&nbsp;` | Jira joins the lines of a `<pre>` into one, and collapses the spaces |
 | Tables, block quotes | Only borders and a left bar are styled | Mail.app shows neither otherwise; font sizes and colors are left to the target |
+| Images | Local images are embedded: as `data:` URLs in the HTML, and in a web archive put on the clipboard alongside it. Wide images shrink to the window | Paste targets cannot read files on your disk. WebKit apps such as Mail.app prefer the web archive and attach its images to the message |
 | Plain text | The Markdown source is added | Slack refuses to paste when there is no plain-text flavor |
 
 Slack has no headings or tables, so headings paste as plain lines and tables as preformatted text.
+
+## Images
+
+Image paths are looked up from the directory of the buffer's file. Obsidian embeds are supported too:
+
+```markdown
+![[image.png]]
+![[image.png|300]]
+![[image.png|alt text]]
+```
+
+An embedded image that is not next to the note is searched for by name in the vault (the nearest directory above that contains `.obsidian`), as Obsidian does. Remote images and images that cannot be found are left as they are, and embeds of anything other than images are kept as text.
 
 The tree-sitter grammar does not follow CommonMark to the letter, so unusual constructs may render differently from GitHub. Everyday documents convert as expected.
 
@@ -57,9 +70,16 @@ vim.keymap.set({ "n", "x" }, "<Leader>y", ":MdRichCopy<CR>", { silent = true })
 
 ```lua
 local rich = require "md-rich-copy"
-rich.to_html(markdown) -- Markdown string -> adjusted HTML string
-rich.copy(lines)       -- copy a list of lines to the clipboard
+rich.to_html(markdown, opts) -- Markdown string -> adjusted HTML string
+rich.copy(lines, opts)       -- copy a list of lines to the clipboard
 ```
+
+Both `opts` are optional:
+
+| Function | Option | Meaning |
+|---|---|---|
+| `to_html` | `image` | `function(src, embed)` returning the `src` attribute of each image. `embed` is `true` for `![[src]]` |
+| `copy` | `base` | Directory that relative image paths are looked up from. The default is the current directory; `:MdRichCopy` passes the directory of the buffer's file |
 
 ## Development
 

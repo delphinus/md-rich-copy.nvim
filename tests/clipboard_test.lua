@@ -35,6 +35,39 @@ H.test("copy puts HTML and the Markdown source on the clipboard", function()
   H.eq(clipboard "public.utf8-plain-text", table.concat(lines, "\n"), "plain text")
 end)
 
+H.test("local images are embedded in the HTML and carried by a web archive", function()
+  -- A 1x1 PNG, and a vault where the embed is found by name alone.
+  local png =
+    vim.base64.decode "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg=="
+  local vault = vim.fn.tempname()
+  vim.fn.mkdir(vault .. "/.obsidian", "p")
+  vim.fn.mkdir(vault .. "/notes", "p")
+  vim.fn.mkdir(vault .. "/files", "p")
+  for _, path in ipairs { "/files/a b.png", "/notes/c.png" } do
+    local f = assert(io.open(vault .. path, "wb"))
+    f:write(png)
+    f:close()
+  end
+  require("md-rich-copy").copy({ "![[a b.png]] ![c](c.png) ![d](missing.png)" }, { base = vault .. "/notes" })
+  vim.fn.delete(vault, "rf")
+  local html = clipboard "public.html"
+  local data = 'src="data:image/png;base64,' .. vim.base64.encode(png) .. '"'
+  H.eq(select(2, html:gsub(vim.pesc(data), "")), 2, "data URLs")
+  H.eq(html:find('src="missing.png"', 1, true) ~= nil, true, "missing image is left alone")
+  local result = vim
+    .system({ "osascript", "-l", "JavaScript", "-" }, {
+      stdin = [[
+ObjC.import("AppKit")
+const data = $.NSPasteboard.generalPasteboard.dataForType("com.apple.webarchive")
+const plist = $.NSPropertyListSerialization.propertyListWithDataOptionsFormatError(data, 0, null, null)
+const subs = ObjC.deepUnwrap(plist.objectForKey("WebSubresources")) || []
+subs.map((s) => s.WebResourceMIMEType + " " + s.WebResourceURL.replace(/.*\//, "")).join("\n")
+]],
+    })
+    :wait()
+  H.eq(result.stdout, "image/png a%20b.png\nimage/png c.png\n", "web archive subresources")
+end)
+
 H.test(":MdRichCopy copies a range of the buffer", function()
   vim.cmd.source "plugin/md-rich-copy.lua"
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { "skipped", "**bold**", "skipped" })

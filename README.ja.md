@@ -18,9 +18,22 @@ Neovim で書いた Markdown を、macOS のクリップボードにリッチテ
 | 取り消し線 | `<del>` と `<s>` の両方で囲む | Jira は `<del>`、Slack は `<s>` しか読まない |
 | コードブロック | 改行を `<br>` に、行頭と連続する空白を `&nbsp;` にする | Jira は `<pre>` の中の行を 1 行につなげ、空白も詰めてしまう |
 | 表・引用 | 罫線と左端の線だけを付ける | メール.app ではどちらも出ない。文字の大きさや色は貼り付け先に任せる |
+| 画像 | 手元の画像を埋め込む。HTML には `data:` URL で入れ、同じ画像を入れた web archive もクリップボードに載せる。幅の広い画像はウィンドウに合わせて縮む | 貼り付け先は手元のファイルを読めない。メール.app などの WebKit を使うアプリは web archive を優先して読み、画像を添付ファイルにする |
 | プレーンテキスト | Markdown の原文を入れる | Slack はプレーンテキストが無いと貼り付けを受け付けない |
 
 Slack には見出しと表の書式が無いので、見出しは普通の行、表は整形済みテキストとして貼られます。
+
+## 画像
+
+画像のパスは、バッファのファイルがあるディレクトリから探します。Obsidian の埋め込みも使えます:
+
+```markdown
+![[image.png]]
+![[image.png|300]]
+![[image.png|代替テキスト]]
+```
+
+埋め込んだ画像がノートと同じディレクトリに無いときは、Obsidian と同じく vault (`.obsidian` を含む最も近い上位のディレクトリ) の中を名前で探します。リモートの画像と見つからない画像はそのまま残し、画像以外の埋め込みは文字のまま残します。
 
 tree-sitter の文法は CommonMark に厳密には従っていないため、珍しい書き方では GitHub と表示が異なることがあります。普段の文書は問題なく変換できます。
 
@@ -57,9 +70,16 @@ vim.keymap.set({ "n", "x" }, "<Leader>y", ":MdRichCopy<CR>", { silent = true })
 
 ```lua
 local rich = require "md-rich-copy"
-rich.to_html(markdown) -- Markdown の文字列 -> 手直し済みの HTML の文字列
-rich.copy(lines)       -- 行のリストをクリップボードへコピーする
+rich.to_html(markdown, opts) -- Markdown の文字列 -> 手直し済みの HTML の文字列
+rich.copy(lines, opts)       -- 行のリストをクリップボードへコピーする
 ```
+
+どちらの `opts` も省略できます:
+
+| 関数 | オプション | 意味 |
+|---|---|---|
+| `to_html` | `image` | 画像ごとに `src` 属性の値を返す `function(src, embed)`。`![[src]]` では `embed` が `true` になる |
+| `copy` | `base` | 相対パスの画像を探すディレクトリ。既定はカレントディレクトリ。`:MdRichCopy` はバッファのファイルがあるディレクトリを渡す |
 
 ## 開発
 
