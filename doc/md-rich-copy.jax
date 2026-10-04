@@ -9,6 +9,7 @@ License: MIT
 はじめに					     |md-rich-copy-introduction|
 必要要件					     |md-rich-copy-requirements|
 コマンド						 |md-rich-copy-commands|
+画像							   |md-rich-copy-images|
 Lua API							      |md-rich-copy-api|
 
 ==============================================================================
@@ -40,12 +41,42 @@ HTML は貼り付け先で崩れないよう手直しする。タスクリスト
 		体。
 
 ==============================================================================
+画像							   *md-rich-copy-images*
+
+手元の画像はコピーに埋め込む。HTML には data: URL で入れ、同じ画像を入れた web
+archive もクリップボードに載せる。メール.app などの WebKit を使うアプリは web
+archive を優先して読み、画像を添付ファイルにする。幅の広い画像はウィンドウに合
+わせて縮む。
+
+画像のパスは、バッファのファイルがあるディレクトリから探す。Obsidian の埋め込
+みも使える:
+>markdown
+	![[image.png]]
+	![[image.png|300]]
+	![[image.png|代替テキスト]]
+<
+
+埋め込んだ画像がノートと同じディレクトリに無いときは、Obsidian と同じく vault
+(".obsidian" を含む最も近い上位のディレクトリ) の中を名前で探す。リモートの画
+像と見つからない画像はそのまま残し、画像以外の埋め込みは文字のまま残す。
+
+==============================================================================
 LUA API							      *md-rich-copy-api*
 
-require("md-rich-copy").to_html({markdown})		*md-rich-copy.to_html()*
-		文字列 {markdown} を手直し済みの HTML に変換して返す。
+require("md-rich-copy").to_html({markdown} [, {opts}])
+							*md-rich-copy.to_html()*
+		文字列 {markdown} を手直し済みの HTML に変換して返す。{opts}
+		は省略できるテーブル:
+		  image	画像ごとに image({src}, {embed}) の形で呼ばれ、src 属
+			性の値を返す関数。"![[src]]" では {embed} が true にな
+			る。
 
-require("md-rich-copy").copy({lines})			   *md-rich-copy.copy()*
-		文字列のリスト {lines} をクリップボードへコピーする。
+require("md-rich-copy").copy({lines} [, {opts}])
+							   *md-rich-copy.copy()*
+		文字列のリスト {lines} をクリップボードへコピーする。{opts} は
+		省略できるテーブル:
+		  base	相対パスの画像を探すディレクトリ。既定はカレントディレ
+			クトリ。コマンド |:MdRichCopy| はバッファのファイルがあ
+			るディレクトリを渡す。
 
 vim:tw=78:ts=8:noet:ft=help:norl:

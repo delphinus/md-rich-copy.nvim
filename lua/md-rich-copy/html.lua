@@ -117,6 +117,7 @@ end
 ---@field lines string[]
 ---@field refs table<string, {href: string, title: string?}>
 ---@field continuation_end table<integer, integer> row -> column where its continuation ends
+---@field image fun(src: string, embed: boolean): string
 local Converter = {}
 Converter.__index = Converter
 
@@ -223,6 +224,38 @@ function Inline:link(node, href, title)
   table.insert(self.out, "</a>")
 end
 
+---@param attrs {title: string?, width: string?, height: string?}
+function Inline:image(src, alt, attrs)
+  local out = { ('<img src="%s" alt="%s"'):format(escape_attr(src), escape_attr(alt)) }
+  for _, name in ipairs { "title", "width", "height" } do
+    if attrs[name] then table.insert(out, (' %s="%s"'):format(name, escape_attr(attrs[name]))) end
+  end
+  -- Screenshots are often wider than the message window, so let them shrink.
+  table.insert(out, ' style="max-width:100%;" />')
+  table.insert(self.out, table.concat(out))
+end
+
+local IMAGE_EXT = { avif = true, bmp = true, gif = true, jpeg = true, jpg = true, png = true, svg = true, webp = true }
+
+--- Render an Obsidian embed "![[target|alias]]". The alias is a size ("300" or
+--- "300x200") or alt text. Embeds of other than images are kept as text.
+function Inline:embed(content)
+  local target, alias = content:match "^([^|]*)|?(.*)$"
+  target = vim.trim((target:gsub("#.*", "")))
+  local ext = target:match "%.(%w+)$"
+  if not (ext and IMAGE_EXT[ext:lower()]) then
+    table.insert(self.out, escape("![[" .. content .. "]]"))
+    return
+  end
+  local width, height = alias:match "^%s*(%d+)%s*$"
+  if not width then
+    width, height = alias:match "^%s*(%d+)x(%d+)%s*$"
+  end
+  local alt = not width and vim.trim(alias) or ""
+  if alt == "" then alt = target:match "[^/]*$" end
+  self:image(self.conv.image(target, true), alt, { width = width, height = height })
+end
+
 local function destination(inline, node)
   local dest = child_of_type(node, "link_destination")
   if not dest then return "" end
@@ -274,16 +307,16 @@ function Inline:node(node)
       self:whole(node)
     end
   elseif type == "image" then
-    local desc = child_of_type(node, "image_description")
-    local title = title_of(self, node)
-    table.insert(
-      self.out,
-      ('<img src="%s" alt="%s"%s />'):format(
-        escape_attr(destination(self, node)),
-        escape_attr(desc and self:plain(desc) or ""),
-        title and (' title="%s"'):format(escape_attr(title)) or ""
-      )
-    )
+    -- The parser reads an Obsidian embed "![[x.png]]" as an image without a destination.
+    local embed = not child_of_type(node, "link_destination") and self:sub(range(node)):match "^!%[%[(.-)%]%]$"
+    if embed then
+      self:embed(embed)
+    else
+      local desc = child_of_type(node, "image_description")
+      self:image(self.conv.image(destination(self, node), false), desc and self:plain(desc) or "", {
+        title = title_of(self, node),
+      })
+    end
   elseif type == "uri_autolink" or type == "email_autolink" then
     local target = self:sub(range(node)):sub(2, -2)
     local href = type == "email_autolink" and "mailto:" .. target or target
@@ -519,10 +552,14 @@ function Converter:collect(node)
   end
 end
 
+---@class md_rich_copy.ConvertOpts
+---@field image? fun(src: string, embed: boolean): string Map an image source to the src attribute. {embed} is true for "![[src]]".
+
 --- Convert Markdown to HTML adjusted for pasting.
 ---@param markdown string
+---@param opts? md_rich_copy.ConvertOpts
 ---@return string
-function M.convert(markdown)
+function M.convert(markdown, opts)
   local src = markdown:gsub("\r\n?", "\n")
   if not src:match "\n$" then src = src .. "\n" end
   local conv = setmetatable({
@@ -530,6 +567,9 @@ function M.convert(markdown)
     lines = vim.split(src, "\n", { plain = true }),
     refs = {},
     continuation_end = {},
+    image = opts and opts.image or function(s)
+      return s
+    end,
   }, Converter)
   local root = parse(src, "markdown")
   conv:collect(root)
